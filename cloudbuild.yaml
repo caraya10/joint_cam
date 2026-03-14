@@ -23,7 +23,7 @@ steps:
       - '8080'
       # Set the HOST_DOMAIN environment variable used by frontend
       - '--set-env-vars'
-      - 'HOST_DOMAIN=streamsync.arayalogic.com'
+      - 'HOST_DOMAIN=streamsync.arayalogic.ai'
 
 images:
   - 'gcr.io/$PROJECT_ID/streamsync:$COMMIT_SHA'
