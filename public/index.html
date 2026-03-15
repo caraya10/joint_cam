@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -9,6 +10,7 @@
     <!-- Main Style -->
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
     <div class="app-container">
         <!-- view: home -->
@@ -17,14 +19,14 @@
                 <h1>StreamSync</h1>
                 <p>Peer-to-peer live streaming</p>
             </header>
-            
+
             <div class="action-buttons">
                 <button id="btn-home-camera" class="btn btn-primary btn-large">
                     <span class="icon">📹</span>
                     <span class="text">Host a Camera</span>
                     <span class="subtext">Generate a stream link</span>
                 </button>
-                
+
                 <button id="btn-home-monitor" class="btn btn-secondary btn-large">
                     <span class="icon">📺</span>
                     <span class="text">Monitor a Stream</span>
@@ -39,7 +41,7 @@
                 <h2>Waiting for connection...</h2>
                 <div class="loader-pulse"></div>
             </header>
-            
+
             <div class="qr-container">
                 <div class="qr-code-wrapper">
                     <div id="qrcode"></div>
@@ -63,7 +65,7 @@
                 <div class="live-indicator">
                     <span class="dot"></span> LIVE
                 </div>
-                
+
                 <div class="camera-preview">
                     <video id="local-video" autoplay muted playsinline></video>
                 </div>
@@ -83,7 +85,7 @@
                 <h2>Enter Stream Code</h2>
                 <p>Or scan a QR code from a camera</p>
             </header>
-            
+
             <div class="input-group">
                 <input type="text" id="input-room-id" placeholder="e.g. s9f8s79df87sf9" autocomplete="off">
                 <button id="btn-join-room" class="btn btn-primary">Join Stream</button>
@@ -97,9 +99,12 @@
         <!-- view: monitoring (active) -->
         <main id="view-monitoring-active" class="view hidden monitor-full">
             <video id="remote-video" autoplay playsinline></video>
-            
+
             <div class="overlay-controls">
                 <div class="live-badge">LIVE</div>
+                <button id="btn-fullscreen" class="btn btn-secondary btn-icon" title="Toggle Fullscreen">
+                    <span class="icon">⛶</span>
+                </button>
                 <button id="btn-stop-monitoring" class="btn btn-danger btn-pill">Stop</button>
             </div>
         </main>
@@ -112,4 +117,5 @@
     <!-- Main App Script -->
     <script src="js/app.js"></script>
 </body>
+
 </html>

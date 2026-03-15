@@ -277,3 +277,28 @@ document.getElementById('btn-stop-monitoring').addEventListener('click', stopAnd
 // Cancel Buttons
 document.getElementById('btn-cancel-setup').addEventListener('click', stopAndResetApp);
 document.getElementById('btn-cancel-monitor').addEventListener('click', stopAndResetApp);
+
+// Fullscreen Button
+document.getElementById('btn-fullscreen').addEventListener('click', () => {
+    const monitorView = document.getElementById('view-monitoring-active');
+
+    if (!document.fullscreenElement) {
+        if (monitorView.requestFullscreen) {
+            monitorView.requestFullscreen();
+        } else if (monitorView.webkitRequestFullscreen) { /* Safari */
+            monitorView.webkitRequestFullscreen();
+        } else if (monitorView.msRequestFullscreen) { /* IE11 */
+            monitorView.msRequestFullscreen();
+        }
+        document.getElementById('btn-fullscreen').querySelector('.icon').textContent = '🗗';
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) { /* Safari */
+            document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) { /* IE11 */
+            document.msExitFullscreen();
+        }
+        document.getElementById('btn-fullscreen').querySelector('.icon').textContent = '⛶';
+    }
+});
