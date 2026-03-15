@@ -89,9 +89,23 @@ socket.on('stream-stopped', () => {
 
 /* ================== Camera Flow ================== */
 
-document.getElementById('btn-home-camera').addEventListener('click', () => {
+document.getElementById('btn-home-camera').addEventListener('click', async () => {
     myRole = 'camera';
     currentRoomId = generateRoomId();
+
+    try {
+        // 1. Get local camera immediately upon user gesture
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' },
+            audio: true
+        });
+        localVideo.srcObject = localStream;
+    } catch (err) {
+        console.error("Failed to start camera:", err);
+        alert("Could not access camera. Please check permissions.");
+        return; // Halt flow if camera fails
+    }
+
     showView('cameraSetup');
 
     // Generate Share URL
@@ -129,13 +143,6 @@ socket.on('user-joined', async (id, role) => {
         console.log("Monitor joined. Starting stream offer.");
 
         try {
-            // 1. Get local camera
-            localStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment' },
-                audio: true
-            });
-            localVideo.srcObject = localStream;
-
             // 2. Setup Peer Connection
             setupPeerConnection();
 
@@ -153,8 +160,8 @@ socket.on('user-joined', async (id, role) => {
             showView('streaming');
 
         } catch (err) {
-            console.error("Failed to start camera:", err);
-            alert("Could not access camera. Please check permissions.");
+            console.error("Failed to establish connection:", err);
+            alert("Could not establish peer connection.");
             stopAndResetApp();
         }
     }
