@@ -253,6 +253,15 @@ function stopAndResetApp() {
         socket.emit('stop-stream', currentRoomId);
     }
 
+    // Reset preview visibility
+    document.querySelector('.camera-preview').style.opacity = '1';
+
+    // Reset toggle button state
+    const toggleBtn = document.getElementById('btn-toggle-camera-view');
+    toggleBtn.querySelector('.svg-eye-open').style.display = 'block';
+    toggleBtn.querySelector('.svg-eye-closed').style.display = 'none';
+    toggleBtn.querySelector('.text').textContent = 'Hide Preview';
+
     // Clear UI state
     localVideo.srcObject = null;
     remoteVideo.srcObject = null;
@@ -273,6 +282,24 @@ function stopAndResetApp() {
 // Stop Buttons
 document.getElementById('btn-stop-streaming').addEventListener('click', stopAndResetApp);
 document.getElementById('btn-stop-monitoring').addEventListener('click', stopAndResetApp);
+
+// Toggle Camera Preview Button
+document.getElementById('btn-toggle-camera-view').addEventListener('click', () => {
+    const previewContainer = document.querySelector('.camera-preview');
+    const toggleBtn = document.getElementById('btn-toggle-camera-view');
+
+    if (previewContainer.style.opacity === '0') {
+        previewContainer.style.opacity = '1';
+        toggleBtn.querySelector('.svg-eye-open').style.display = 'block';
+        toggleBtn.querySelector('.svg-eye-closed').style.display = 'none';
+        toggleBtn.querySelector('.text').textContent = 'Hide Preview';
+    } else {
+        previewContainer.style.opacity = '0'; // Hide visually but don't disrupt stream
+        toggleBtn.querySelector('.svg-eye-open').style.display = 'none';
+        toggleBtn.querySelector('.svg-eye-closed').style.display = 'block';
+        toggleBtn.querySelector('.text').textContent = 'Show Preview';
+    }
+});
 
 // Cancel Buttons
 document.getElementById('btn-cancel-setup').addEventListener('click', stopAndResetApp);
