@@ -290,7 +290,8 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
         } else if (monitorView.msRequestFullscreen) { /* IE11 */
             monitorView.msRequestFullscreen();
         }
-        document.getElementById('btn-fullscreen').querySelector('.icon').textContent = '🗗';
+        document.getElementById('btn-fullscreen').querySelector('.svg-enter').style.display = 'none';
+        document.getElementById('btn-fullscreen').querySelector('.svg-exit').style.display = 'block';
     } else {
         if (document.exitFullscreen) {
             document.exitFullscreen();
@@ -299,6 +300,7 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
         } else if (document.msExitFullscreen) { /* IE11 */
             document.msExitFullscreen();
         }
-        document.getElementById('btn-fullscreen').querySelector('.icon').textContent = '⛶';
+        document.getElementById('btn-fullscreen').querySelector('.svg-enter').style.display = 'block';
+        document.getElementById('btn-fullscreen').querySelector('.svg-exit').style.display = 'none';
     }
 });
