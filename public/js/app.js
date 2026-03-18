@@ -143,6 +143,13 @@ socket.on('user-joined', async (id, role) => {
         console.log("Monitor joined. Starting stream offer.");
 
         try {
+            // Clean up existing peer connection if one exists (e.g. previous monitor disconnected)
+            if (peerConnection) {
+                console.log("Cleaning up existing peer connection before creating a new one.");
+                peerConnection.close();
+                peerConnection = null;
+            }
+
             // 2. Setup Peer Connection
             setupPeerConnection();
 
@@ -227,8 +234,16 @@ function setupPeerConnection() {
 
     peerConnection.onconnectionstatechange = () => {
         if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
-            alert("Connection lost.");
-            stopAndResetApp();
+            if (myRole === 'camera') {
+                console.log("Monitor disconnected. Waiting for a new connection...");
+                // Clean up the broken connection but keep the stream alive
+                peerConnection.close();
+                peerConnection = null;
+                // We keep currentRoomId and localStream intact, and wait for 'user-joined'
+            } else {
+                alert("Connection lost.");
+                stopAndResetApp();
+            }
         }
     };
 }
