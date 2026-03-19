@@ -13,7 +13,7 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'streamsync'
+      - '$_DEP_ENV'
       - '--image'
       - 'gcr.io/$PROJECT_ID/streamsync:$COMMIT_SHA'
       - '--region'
@@ -22,7 +22,8 @@ steps:
       - '--port'
       - '8080'
       # Set the HOST_DOMAIN environment variable used by frontend
-      - '--set-env-vars'
+      - '--set-env-vars=GCS_BUCKET_NAME=$_GCS_BUCKET_NAME'
+      - '--update-secrets=GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest'
       - 'HOST_DOMAIN=streamsync.arayalogic.ai'
 
 images:

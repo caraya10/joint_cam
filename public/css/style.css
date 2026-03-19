@@ -52,19 +52,16 @@ body {
     background-color: var(--bg-base);
     color: var(--text-primary);
     -webkit-font-smoothing: antialiased;
-    overflow: hidden;
-    /* Prevent scrolling, app-like feel */
-    height: 100vh;
-    height: 100dvh;
+    overflow: auto;
+    min-height: 100vh;
 }
 
 /* ================== Layout Structure ================== */
 .app-container {
     width: 100%;
-    height: 100%;
+    min-height: 100vh;
     position: relative;
     max-width: 600px;
-    /* Constrain on desktop to mobile size */
     margin: 0 auto;
     background-color: var(--bg-base);
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
@@ -77,7 +74,7 @@ body {
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     padding: 24px;
@@ -97,10 +94,7 @@ body {
 
 .view.hidden {
     display: none;
-    /* Only use this if avoiding layout calculation */
 }
-
-/* We override hidden locally through JS classes later to fade out gracefully */
 
 /* ================== Typography ================== */
 h1 {
@@ -120,10 +114,22 @@ h2 {
     margin-bottom: 8px;
 }
 
+h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
 p {
     font-size: 1rem;
     color: var(--text-secondary);
     line-height: 1.5;
+}
+
+.subtext {
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    font-weight: 400;
 }
 
 /* ================== Buttons ================== */
@@ -164,25 +170,17 @@ p {
     color: var(--text-primary);
 }
 
-.btn-large .subtext {
-    font-size: 0.875rem;
-    color: var(--text-tertiary);
-    font-weight: 400;
-}
-
 .btn-primary {
     background: linear-gradient(135deg, var(--brand-primary), var(--brand-primary-hover));
     box-shadow: var(--shadow-glow);
     border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn-primary:active .text {
     color: #fff;
 }
 
 .btn-secondary {
     background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
+    color: var(--text-primary);
 }
 
 .btn-secondary:hover {
@@ -215,6 +213,12 @@ p {
     font-size: 0.875rem;
 }
 
+.btn-xs {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    border-radius: 4px;
+}
+
 .btn-ghost {
     background: rgba(255, 255, 255, 0.05);
     color: var(--text-primary);
@@ -232,6 +236,37 @@ p {
     padding: 0;
 }
 
+/* ================== General Components ================== */
+.card {
+    background: var(--bg-surface);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    border: 1px solid var(--border-subtle);
+    margin-bottom: 24px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    color: #fff;
+    font-size: 1rem;
+    transition: border-color var(--transition-fast);
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--brand-primary);
+}
+
 /* ================== Specific Views ================== */
 
 /* Home View */
@@ -247,77 +282,110 @@ p {
     gap: 20px;
 }
 
-/* Setup View */
-.status-header {
-    text-align: center;
-    margin-top: 40px;
-    margin-bottom: 32px;
+.auth-section {
+    margin-top: auto;
+    padding-bottom: 24px;
 }
 
-.qr-container {
-    background: var(--bg-surface);
-    border-radius: var(--radius-lg);
-    padding: 32px 24px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    border: 1px solid var(--border-subtle);
-    margin-bottom: 24px;
-}
-
-.qr-code-wrapper {
-    background: #fff;
-    padding: 16px;
-    border-radius: var(--radius-md);
-    margin-bottom: 24px;
-    box-shadow: var(--shadow-glow);
-}
-
-.instruction-text {
-    text-align: center;
-    font-size: 0.9375rem;
-}
-
-.url-share {
+.user-info {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: rgba(0, 0, 0, 0.3);
+    margin-bottom: 16px;
     padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
     border-radius: var(--radius-md);
     border: 1px solid var(--border-subtle);
-    margin-bottom: auto;
 }
 
-.url-text {
-    font-family: monospace;
-    color: var(--text-primary);
-    font-size: 0.875rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-right: 12px;
-}
-
-footer {
+/* Dashboard View */
+.status-header {
+    margin-bottom: 24px;
     display: flex;
-    justify-content: center;
-    padding-top: 24px;
-    margin-top: auto;
+    align-items: center;
+    justify-content: space-between;
 }
 
-/* Streaming Mode Classes */
+.creation-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 24px;
+}
 
+.creation-bar input {
+    flex: 1;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    color: #fff;
+    font-size: 1rem;
+}
+
+.camera-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.camera-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.camera-info h4 {
+    margin-bottom: 4px;
+}
+
+.camera-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.sharing-management {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+}
+
+.sharing-management .input-group {
+    flex-direction: row;
+    margin-bottom: 16px;
+}
+
+.sharing-email-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.sharing-chip {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    padding: 6px 14px;
+    font-size: 0.8125rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Streaming View */
 .stream-backdrop {
     flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
-    background: var(--bg-surface);
+    background: #000;
     border-radius: var(--radius-lg);
     overflow: hidden;
-    border: 1px solid var(--border-subtle);
     margin-bottom: 24px;
 }
 
@@ -327,7 +395,6 @@ footer {
     left: 16px;
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     padding: 6px 12px;
     border-radius: var(--radius-pill);
     display: flex;
@@ -335,7 +402,6 @@ footer {
     gap: 8px;
     font-size: 0.875rem;
     font-weight: 600;
-    color: #fff;
     z-index: 10;
 }
 
@@ -344,7 +410,7 @@ footer {
     height: 8px;
     background-color: var(--accent-danger);
     border-radius: 50%;
-    animation: blink 1.5s infinite ease-in-out;
+    animation: blink 1.5s infinite;
 }
 
 @keyframes blink {
@@ -364,7 +430,6 @@ footer {
 .camera-preview {
     width: 100%;
     height: 100%;
-    background: #000;
 }
 
 .camera-preview video {
@@ -372,91 +437,55 @@ footer {
     height: 100%;
     object-fit: cover;
     transform: scaleX(-1);
-    /* Mirror self view */
+}
+
+.invite-overlay {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    z-index: 20;
+    width: 140px;
+    text-align: center;
+}
+
+#qrcode-small {
+    background: #fff;
+    padding: 6px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    display: inline-block;
+}
+
+#qrcode-small img,
+#qrcode-small canvas {
+    width: 110px !important;
+    height: 110px !important;
+}
+
+.url-share-small .url-text {
+    display: block;
+    font-size: 0.65rem;
+    font-family: monospace;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
 }
 
 .stream-controls {
     display: flex;
     justify-content: center;
     gap: 16px;
-    margin-bottom: 24px;
+    padding-bottom: 24px;
 }
 
-/* Animations & Loaders */
-.loader-pulse {
-    width: 8px;
-    height: 8px;
-    background-color: var(--brand-primary);
-    border-radius: 50%;
-    margin: 16px auto 0;
-    position: relative;
-    animation: loader 1s infinite alternate ease-in-out;
-}
-
-.loader-pulse::before,
-.loader-pulse::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    width: 8px;
-    height: 8px;
-    background-color: var(--brand-primary);
-    border-radius: 50%;
-    animation: loader 1s infinite alternate ease-in-out;
-}
-
-.loader-pulse::before {
-    left: -20px;
-    animation-delay: -0.2s;
-}
-
-.loader-pulse::after {
-    left: 20px;
-    animation-delay: 0.2s;
-}
-
-@keyframes loader {
-    0% {
-        transform: scale(0.8);
-        opacity: 0.5;
-    }
-
-    100% {
-        transform: scale(1.2);
-        opacity: 1;
-    }
-}
-
-/* Form inputs for Monitor Setup */
-.input-group {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    margin-bottom: auto;
-}
-
-.input-group input {
-    width: 100%;
-    padding: 16px;
-    background: var(--bg-surface);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--radius-md);
-    color: #fff;
-    font-size: 1.125rem;
-    font-family: monospace;
-    text-align: center;
-    transition: border-color var(--transition-fast);
-}
-
-.input-group input:focus {
-    outline: none;
-    border-color: var(--brand-primary);
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-}
-
-/* Full Screen Monitor Mode */
-.view.monitor-full {
-    padding: 0;
+/* Fullscreen Monitor */
+.monitor-full {
     background: #000;
 }
 
@@ -469,26 +498,28 @@ footer {
 .overlay-controls {
     position: absolute;
     bottom: 40px;
-    left: 0;
     width: 100%;
     display: flex;
     justify-content: center;
-    align-items: center;
-    gap: 16px;
-    z-index: 30;
+    gap: 20px;
 }
 
 .live-badge {
     position: absolute;
-    top: 30px;
+    top: 20px;
     left: 20px;
     background: var(--accent-danger);
-    color: white;
     padding: 4px 12px;
     border-radius: 4px;
-    font-weight: 700;
-    font-size: 0.875rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    z-index: 30;
+    font-weight: bold;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.empty-msg {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: 48px 0;
 }

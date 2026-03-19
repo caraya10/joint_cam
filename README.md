@@ -47,5 +47,36 @@ To test on your actual mobile device, you need to expose your local server secur
 7. Open the native Camera app on your **mobile phone** and scan the QR code displayed on your computer screen.
 8. The phone will open the stream link securely, and WebRTC will connect!
 
+## Configuration & Environment Variables
+
+The app uses environment variables for authentication and domain settings. Create a `.env` file or set these in your environment:
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `GOOGLE_CLIENT_ID` | Your GCP OAuth 2.0 Client ID | |
+| `GOOGLE_CLIENT_SECRET` | Your GCP OAuth 2.0 Client Secret | |
+| `SESSION_SECRET` | Random string for secure sessions | `streamsync-default-secret` |
+| `HOST_DOMAIN` | Your public domain (e.g., `streamsync.arayalogic.ai`) | `localhost:8080` |
+| `DEV_LOGIN` | Multi-user test mode for local dev (bypasses Google) | `false` |
+| `GCS_BUCKET_NAME` | Optional GCS bucket for data persistence | |
+
+## Google Authentication Setup
+
+To use Google Login, you must create a project in the **[Google Cloud Console](https://console.cloud.google.com/)**:
+
+1.  **Create a Project**: Go to the project selector and create a new project.
+2.  **OAuth Consent Screen**:
+    - Go to **APIs & Services > OAuth consent screen**.
+    - Choose **External** (unless you are in a Google Workspace organization).
+    - Provide an App Name, User support email, and Developer contact information.
+    - Add the `.../auth/userinfo.email` and `.../auth/userinfo.profile` scopes.
+3.  **Create Credentials**:
+    - Go to **APIs & Services > Credentials**.
+    - Click **Create Credentials > OAuth client ID**.
+    - Select **Web application**.
+    - **Authorized JavaScript origins**: `http://localhost:8080` and your production URL.
+    - **Authorized redirect URIs**: `http://localhost:8080/auth/google/callback` and `https://yourdomain.com/auth/google/callback`.
+4.  Copy your **Client ID** and **Client Secret** into your `.env` file.
+
 ## Deployment
 This app is ready to be deployed to Google Cloud Run, which handles HTTP, WebSockets (for Socket.io), and HTTPS provisioning automatically. See `DEPLOY_GCP.md` for instructions.

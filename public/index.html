@@ -20,42 +20,93 @@
                 <p>Peer-to-peer live streaming</p>
             </header>
 
-            <div class="action-buttons">
-                <button id="btn-home-camera" class="btn btn-secondary btn-large">
-                    <span class="icon">📹</span>
-                    <span class="text">Host a Camera</span>
-                    <span class="subtext">Share your camera stream</span>
-                </button>
+            <div class="card quick-connect">
+                <h3>Quick Connect</h3>
+                <p class="subtext">Start a temporary, one-off stream</p>
+                <div class="action-buttons">
+                    <button id="btn-home-camera" class="btn btn-secondary btn-large">
+                        <span class="icon">📹</span>
+                        <span class="text">Host a Camera</span>
+                    </button>
 
-                <button id="btn-home-monitor" class="btn btn-secondary btn-large">
-                    <span class="icon">📺</span>
-                    <span class="text">Monitor a Stream</span>
-                    <span class="subtext">Join an active stream</span>
-                </button>
+                    <button id="btn-home-monitor" class="btn btn-secondary btn-large">
+                        <span class="icon">📺</span>
+                        <span class="text">Monitor a Stream</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="auth-section">
+                <div id="auth-logged-out">
+                    <button id="btn-login-google" class="btn btn-primary btn-large">
+                        <span class="icon">G</span>
+                        <span class="text">Login with Google</span>
+                    </button>
+                    <!-- Dev Login Buttons -->
+                    <div id="dev-login-container" class="hidden">
+                        <p class="subtext" style="text-align:center; margin: 16px 0 8px;">Dev Bypass</p>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="btn-login-dev-1" class="btn btn-sm btn-secondary" style="flex:1;">Login as User
+                                1</button>
+                            <button id="btn-login-dev-2" class="btn btn-sm btn-secondary" style="flex:1;">Login as User
+                                2</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="auth-logged-in" class="hidden">
+                    <div class="user-info">
+                        <span id="user-display-name"></span>
+                        <button id="btn-logout" class="btn btn-sm btn-ghost">Logout</button>
+                    </div>
+                    <button id="btn-go-dashboard" class="btn btn-primary btn-large">Go to My Dashboard</button>
+                </div>
             </div>
         </main>
 
-        <!-- view: camera setup -->
-        <main id="view-camera-setup" class="view hidden">
+        <!-- view: dashboard -->
+        <main id="view-dashboard" class="view hidden">
             <header class="status-header">
-                <h2>Waiting for connection...</h2>
-                <div class="loader-pulse"></div>
+                <h2>My Cameras</h2>
             </header>
 
-            <div class="qr-container">
-                <div class="qr-code-wrapper">
-                    <div id="qrcode"></div>
+            <div class="creation-bar">
+                <input type="text" id="input-new-camera-name" placeholder="Camera Name (optional)">
+                <button id="btn-new-camera" class="btn btn-sm btn-secondary">Start Camera</button>
+            </div>
+
+            <div id="camera-list" class="camera-list">
+                <!-- Camera items items will be injected here -->
+                <p class="empty-msg">Loading cameras...</p>
+            </div>
+
+            <div class="sharing-management">
+                <h3>Autoshare with these users</h3>
+                <p class="subtext">New cameras will automatically be shared with these emails.</p>
+                <div class="input-group">
+                    <input type="email" id="input-new-share-email" placeholder="Enter email address">
+                    <button id="btn-add-share-email" class="btn btn-sm btn-primary">Add</button>
                 </div>
-                <p class="instruction-text">Scan this QR code with the monitor device</p>
+                <div id="sharing-list" class="sharing-email-list">
+                    <!-- Emails will be injected here -->
+                </div>
             </div>
 
-            <div class="url-share">
-                <span id="share-url" class="url-text"></span>
-                <button id="btn-copy-url" class="btn btn-sm btn-ghost">Copy Link</button>
-            </div>
+            <footer class="dashboard-footer">
+                <button id="btn-dashboard-back" class="btn btn-ghost">Back to Home</button>
+            </footer>
+        </main>
 
+        <!-- view: share camera modal (standalone share) -->
+        <main id="view-share-camera" class="view hidden">
+            <header class="status-header">
+                <h2 id="share-camera-name">Share Camera</h2>
+            </header>
+            <div class="input-group">
+                <input type="email" id="input-share-email" placeholder="Enter user email to share with">
+                <button id="btn-do-share" class="btn btn-primary">Share</button>
+            </div>
             <footer>
-                <button id="btn-cancel-setup" class="btn btn-danger btn-outline">Cancel</button>
+                <button id="btn-cancel-share" class="btn btn-danger btn-outline">Cancel</button>
             </footer>
         </main>
 
@@ -68,6 +119,17 @@
 
                 <div class="camera-preview">
                     <video id="local-video" autoplay muted playsinline></video>
+                </div>
+            </div>
+
+            <!-- Unified Invite Section -->
+            <div class="invite-overlay">
+                <div class="qr-container-small">
+                    <div id="qrcode-small"></div>
+                </div>
+                <div class="url-share-small">
+                    <span id="share-url-small" class="url-text"></span>
+                    <button id="btn-copy-url-small" class="btn btn-xs btn-ghost">Copy</button>
                 </div>
             </div>
 
@@ -97,7 +159,7 @@
             </div>
         </main>
 
-        <!-- view: monitoring (setup) -->
+        <!-- view: monitor setup (still needed for Quick Connect Manual Entry) -->
         <main id="view-monitor-setup" class="view hidden">
             <header class="status-header">
                 <h2>Enter Stream Code</h2>

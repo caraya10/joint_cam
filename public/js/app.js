@@ -12,15 +12,18 @@ const peerConnectionConfig = {
 };
 
 // State
-let peerConnection;
+let peerConnections = {}; // Keyed by monitorSocketId
 let localStream;
 let currentRoomId;
 let myRole; // 'camera' or 'monitor'
+let currentUser = null;
+let configTargetHost = '';
+let dashboardInterval = null;
 
 // DOM Elements
 const views = {
     home: document.getElementById('view-home'),
-    cameraSetup: document.getElementById('view-camera-setup'),
+    dashboard: document.getElementById('view-dashboard'),
     streaming: document.getElementById('view-streaming'),
     monitorSetup: document.getElementById('view-monitor-setup'),
     monitoringActive: document.getElementById('view-monitoring-active')
@@ -31,54 +34,230 @@ const remoteVideo = document.getElementById('remote-video');
 
 // Utility to switch views
 function showView(viewName) {
+    if (dashboardInterval && viewName !== 'dashboard') {
+        clearInterval(dashboardInterval);
+        dashboardInterval = null;
+    }
+
     Object.values(views).forEach(v => {
+        if (!v) return;
         v.classList.remove('active');
-        setTimeout(() => v.classList.add('hidden'), 200); // fade out duration
+        setTimeout(() => v.classList.add('hidden'), 200);
     });
 
     setTimeout(() => {
+        if (!views[viewName]) return;
         views[viewName].classList.remove('hidden');
-        // Small delay to allow display block to apply before animating opacity
         setTimeout(() => views[viewName].classList.add('active'), 50);
     }, 200);
 }
 
 // Generate random room ID
 function generateRoomId() {
-    return Math.random().toString(36).substring(2, 10);
+    return Math.random().toString(36).substring(2, 12);
 }
 
-let configTargetHost = '';
+/* ================== Initialization & Auth ================== */
 
-// Check URL on load for room ID (If monitor scanned QR)
 window.onload = async () => {
+    // 1. Load Config
     try {
         const res = await fetch('/config.json');
         const config = await res.json();
         if (config.HOST_DOMAIN) {
-            configTargetHost = config.HOST_DOMAIN;
-            if (!configTargetHost.startsWith('http')) {
-                configTargetHost = `https://${configTargetHost}`;
-            }
+            configTargetHost = config.HOST_DOMAIN.startsWith('http') ? config.HOST_DOMAIN : `https://${config.HOST_DOMAIN}`;
         }
     } catch (e) {
         console.error("Could not load config", e);
     }
 
+    // 2. Check Auth
+    await checkAuth();
+
+    // 3. Handle URL params
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('r');
     if (room) {
         document.getElementById('input-room-id').value = room;
-        showView('monitorSetup');
+        joinAsMonitor(room, true); // Immediate join if coming from link
     }
 };
 
-/* ================== General WebRTC & Socket Handlers ================== */
+async function checkAuth() {
+    try {
+        const res = await fetch('/api/user');
+        currentUser = await res.json();
 
-socket.on('ice-candidate', (candidate) => {
-    if (peerConnection) {
-        // Add a delay or check target state before adding
-        peerConnection.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error("Error adding ice candidate:", e));
+        const loggedOutDiv = document.getElementById('auth-logged-out');
+        const loggedInDiv = document.getElementById('auth-logged-in');
+
+        const resConfig = await fetch('/config.json');
+        const config = await resConfig.json();
+
+        if (currentUser) {
+            loggedOutDiv.classList.add('hidden');
+            loggedInDiv.classList.remove('hidden');
+            document.getElementById('user-display-name').textContent = currentUser.name;
+
+            // Auto-navigate to dashboard if not joining a specific room
+            const urlParams = new URLSearchParams(window.location.search);
+            if (!urlParams.get('r')) {
+                loadDashboard();
+            }
+        } else {
+            loggedOutDiv.classList.remove('hidden');
+            loggedInDiv.classList.add('hidden');
+            if (config.IS_DEV_LOGIN) {
+                document.getElementById('dev-login-container').classList.remove('hidden');
+            }
+        }
+    } catch (e) {
+        console.error("Auth check failed", e);
+    }
+}
+
+document.getElementById('btn-login-google').addEventListener('click', () => {
+    window.location.href = '/auth/google';
+});
+
+document.getElementById('btn-login-dev-1')?.addEventListener('click', () => {
+    window.location.href = '/auth/dev-login/1';
+});
+
+document.getElementById('btn-login-dev-2')?.addEventListener('click', () => {
+    window.location.href = '/auth/dev-login/2';
+});
+
+document.getElementById('btn-logout').addEventListener('click', () => {
+    window.location.href = '/logout';
+});
+
+document.getElementById('btn-go-dashboard').addEventListener('click', () => {
+    loadDashboard();
+});
+
+document.getElementById('btn-dashboard-back').addEventListener('click', () => {
+    showView('home');
+});
+
+/* ================== Dashboard Flow ================== */
+
+async function loadDashboard() {
+    showView('dashboard');
+    const list = document.getElementById('camera-list');
+    list.innerHTML = '<p class="empty-msg">Loading cameras...</p>';
+
+    await refreshCameraList();
+
+    // Start auto-refresh interval (every 10 seconds)
+    if (!dashboardInterval) {
+        dashboardInterval = setInterval(refreshCameraList, 10000);
+    }
+}
+
+async function refreshCameraList() {
+    const list = document.getElementById('camera-list');
+
+    try {
+        const resCams = await fetch('/api/cameras');
+        const cameras = await resCams.json();
+
+        if (cameras.length === 0) {
+            list.innerHTML = '<p class="empty-msg">No active cameras found. Start one to see it here!</p>';
+        } else {
+            list.innerHTML = '';
+            cameras.forEach(cam => {
+                const item = document.createElement('div');
+                item.className = 'camera-item';
+                const isOwner = cam.owner === currentUser.id;
+
+                item.innerHTML = `
+                    <div class="camera-info">
+                        <h4>${cam.name}</h4>
+                        <div class="owner-info">${isOwner ? 'Your Camera' : 'Shared with you'}</div>
+                    </div>
+                    <div class="camera-actions">
+                        <button class="btn btn-sm btn-primary btn-monitor" data-id="${cam.id}">Monitor</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+
+            // Add event listeners
+            list.querySelectorAll('.btn-monitor').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const id = btn.getAttribute('data-id');
+                    joinAsMonitor(id, true);
+                });
+            });
+        }
+
+        // Load Sharing List (only if first time or minimal refresh)
+        const resSharing = await fetch('/api/user/sharing');
+        const sharingList = await resSharing.json();
+        const sharingContainer = document.getElementById('sharing-list');
+        if (sharingContainer) {
+            sharingContainer.innerHTML = '';
+            sharingList.forEach(email => {
+                const chip = document.createElement('div');
+                chip.className = 'sharing-chip';
+                chip.innerHTML = `<span>${email}</span>`;
+                sharingContainer.appendChild(chip);
+            });
+        }
+
+    } catch (e) {
+        console.error("Failed to refresh camera list", e);
+    }
+}
+
+document.getElementById('btn-new-camera').addEventListener('click', async () => {
+    const nameInput = document.getElementById('input-new-camera-name');
+    const name = nameInput.value.trim();
+
+    try {
+        const res = await fetch('/api/cameras', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        if (res.ok) {
+            const newCam = await res.json();
+            nameInput.value = '';
+            // Immediately start hosting the new camera
+            startCameraStream(newCam.id, true);
+        }
+    } catch (e) {
+        console.error("Failed to create camera", e);
+    }
+});
+
+document.getElementById('btn-add-share-email').addEventListener('click', async () => {
+    const emailInput = document.getElementById('input-new-share-email');
+    const email = emailInput.value.trim();
+    if (!email) return;
+
+    try {
+        const res = await fetch('/api/user/sharing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
+        if (res.ok) {
+            emailInput.value = '';
+            refreshCameraList();
+        }
+    } catch (e) {
+        console.error("Failed to add sharing email", e);
+    }
+});
+
+/* ================== General Handlers ================== */
+
+socket.on('ice-candidate', (candidate, fromId) => {
+    const pc = peerConnections[fromId];
+    if (pc) {
+        pc.addIceCandidate(new RTCIceCandidate(candidate)).catch(e => console.error("Error adding ice candidate:", e));
     }
 });
 
@@ -89,12 +268,13 @@ socket.on('stream-stopped', () => {
 
 /* ================== Camera Flow ================== */
 
-document.getElementById('btn-home-camera').addEventListener('click', async () => {
+document.getElementById('btn-home-camera').addEventListener('click', () => startCameraStream());
+
+async function startCameraStream(roomId, immediate = false) {
     myRole = 'camera';
-    currentRoomId = generateRoomId();
+    currentRoomId = roomId || generateRoomId();
 
     try {
-        // 1. Get local camera immediately upon user gesture
         localStream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: 'environment' },
             audio: true
@@ -102,203 +282,179 @@ document.getElementById('btn-home-camera').addEventListener('click', async () =>
         localVideo.srcObject = localStream;
     } catch (err) {
         console.error("Failed to start camera:", err);
-        alert("Could not access camera. Please check permissions.");
-        return; // Halt flow if camera fails
+        alert("Could not access camera.");
+        return;
     }
 
-    showView('cameraSetup');
+    // Clear dashboard interval if hosting
+    if (dashboardInterval) {
+        clearInterval(dashboardInterval);
+        dashboardInterval = null;
+    }
 
-    // Generate Share URL
+    // Unified: Go straight to streaming view
+    showView('streaming');
+
     const baseUrl = configTargetHost || window.location.origin;
     const shareUrl = `${baseUrl}?r=${currentRoomId}`;
-    document.getElementById('share-url').textContent = shareUrl;
 
-    // Generate QR Code
-    document.getElementById('qrcode').innerHTML = ''; // clear previous
-    new QRCode(document.getElementById('qrcode'), {
-        text: shareUrl,
-        width: 200,
-        height: 200,
-        colorDark: "#000000",
-        colorLight: "#ffffff",
-        correctLevel: QRCode.CorrectLevel.H
+    // Render small QR and Link in streaming overlay
+    document.getElementById('share-url-small').textContent = shareUrl;
+    document.getElementById('qrcode-small').innerHTML = '';
+    new QRCode(document.getElementById('qrcode-small'), {
+        text: shareUrl, width: 110, height: 110, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H
     });
 
     socket.emit('join-room', currentRoomId, 'camera');
-});
+}
 
-// User copied URL
-document.getElementById('btn-copy-url').addEventListener('click', () => {
-    const text = document.getElementById('share-url').textContent;
-    navigator.clipboard.writeText(text).then(() => {
-        const btn = document.getElementById('btn-copy-url');
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = 'Copy Link', 2000);
-    });
-});
-
-// A monitor has joined our room
-socket.on('user-joined', async (id, role) => {
+socket.on('user-joined', async (monitorId, role) => {
     if (myRole === 'camera' && role === 'monitor') {
-        console.log("Monitor joined. Starting stream offer.");
+        console.log(`Monitor ${monitorId} joined. Starting stream offer.`);
 
         try {
-            // Clean up existing peer connection if one exists (e.g. previous monitor disconnected)
-            if (peerConnection) {
-                console.log("Cleaning up existing peer connection before creating a new one.");
-                peerConnection.close();
-                peerConnection = null;
-            }
+            const pc = setupPeerConnection(monitorId);
+            peerConnections[monitorId] = pc;
 
-            // 2. Setup Peer Connection
-            setupPeerConnection();
-
-            // 3. Add tracks
             localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, localStream);
+                pc.addTrack(track, localStream);
             });
 
-            // 4. Create and send offer
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-            socket.emit('offer', offer, currentRoomId);
-
-            // 5. Update UI
-            showView('streaming');
-
+            const offer = await pc.createOffer();
+            await pc.setLocalDescription(offer);
+            socket.emit('offer', offer, currentRoomId, monitorId);
         } catch (err) {
             console.error("Failed to establish connection:", err);
-            alert("Could not establish peer connection.");
-            stopAndResetApp();
         }
     }
 });
 
-socket.on('answer', async (answer) => {
-    if (myRole === 'camera' && peerConnection) {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+socket.on('answer', async (answer, fromId) => {
+    const pc = peerConnections[fromId];
+    if (myRole === 'camera' && pc) {
+        await pc.setRemoteDescription(new RTCSessionDescription(answer));
     }
 });
 
 /* ================== Monitor Flow ================== */
 
-document.getElementById('btn-home-monitor').addEventListener('click', () => {
-    showView('monitorSetup');
-});
+document.getElementById('btn-home-monitor').addEventListener('click', () => showView('monitorSetup'));
 
 document.getElementById('btn-join-room').addEventListener('click', () => {
     const roomInput = document.getElementById('input-room-id').value.trim();
     if (!roomInput) return alert("Please enter a stream code.");
+    joinAsMonitor(roomInput, true);
+});
 
+function joinAsMonitor(roomId, immediate = false) {
     myRole = 'monitor';
-    currentRoomId = roomInput;
+    currentRoomId = roomId;
+
+    if (dashboardInterval) {
+        clearInterval(dashboardInterval);
+        dashboardInterval = null;
+    }
+
+    if (immediate) {
+        showView('monitoringActive');
+    }
 
     socket.emit('join-room', currentRoomId, 'monitor');
 
-    // Disable button to prevent spam
-    document.getElementById('btn-join-room').disabled = true;
-    document.getElementById('btn-join-room').textContent = 'Waiting for stream...';
-});
+    const joinBtn = document.getElementById('btn-join-room');
+    if (joinBtn) {
+        joinBtn.disabled = true;
+        joinBtn.textContent = 'Waiting for stream...';
+    }
+}
 
-socket.on('offer', async (offer) => {
+socket.on('offer', async (offer, cameraSocketId) => {
     if (myRole === 'monitor') {
-        setupPeerConnection();
+        const pc = setupPeerConnection(cameraSocketId);
+        peerConnections[cameraSocketId] = pc;
 
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
 
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-
-        socket.emit('answer', answer, currentRoomId);
-
-        showView('monitoringActive');
+        socket.emit('answer', answer, currentRoomId, cameraSocketId);
+        showView('monitoringActive'); // Switch if not already there
     }
 });
 
 /* ================== Shared WebRTC Methods ================== */
 
-function setupPeerConnection() {
-    peerConnection = new RTCPeerConnection(peerConnectionConfig);
+function setupPeerConnection(targetId) {
+    const pc = new RTCPeerConnection(peerConnectionConfig);
 
-    peerConnection.onicecandidate = (event) => {
+    pc.onicecandidate = (event) => {
         if (event.candidate) {
-            socket.emit('ice-candidate', event.candidate, currentRoomId);
+            socket.emit('ice-candidate', event.candidate, currentRoomId, targetId);
         }
     };
 
-    peerConnection.ontrack = (event) => {
+    pc.ontrack = (event) => {
         if (myRole === 'monitor') {
             remoteVideo.srcObject = event.streams[0];
         }
     };
 
-    peerConnection.onconnectionstatechange = () => {
-        if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+    pc.onconnectionstatechange = () => {
+        if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
             if (myRole === 'camera') {
-                console.log("Monitor disconnected. Waiting for a new connection...");
-                // Clean up the broken connection but keep the stream alive
-                peerConnection.close();
-                peerConnection = null;
-                // We keep currentRoomId and localStream intact, and wait for 'user-joined'
+                console.log(`Monitor ${targetId} disconnected.`);
+                pc.close();
+                delete peerConnections[targetId];
             } else {
-                alert("Connection lost.");
+                console.log("Connection lost, attempting to reset.");
                 stopAndResetApp();
             }
         }
     };
+
+    return pc;
 }
 
 /* ================== Teardown & Navigation ================== */
 
 function stopAndResetApp() {
-    // Stop local media tracks
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
         localStream = null;
     }
 
-    // Close WebRTC
-    if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-    }
+    Object.values(peerConnections).forEach(pc => pc.close());
+    peerConnections = {};
 
-    // Tell others
     if (currentRoomId) {
         socket.emit('stop-stream', currentRoomId);
     }
 
-    // Reset preview visibility
+    if (dashboardInterval) {
+        clearInterval(dashboardInterval);
+        dashboardInterval = null;
+    }
+
     document.querySelector('.camera-preview').style.opacity = '1';
-
-    // Reset toggle button state
-    const toggleBtn = document.getElementById('btn-toggle-camera-view');
-    toggleBtn.querySelector('.svg-eye-open').style.display = 'block';
-    toggleBtn.querySelector('.svg-eye-closed').style.display = 'none';
-    toggleBtn.querySelector('.text').textContent = 'Hide Preview';
-
-    // Clear UI state
     localVideo.srcObject = null;
     remoteVideo.srcObject = null;
     currentRoomId = null;
     myRole = null;
 
-    // Reset monitor join button
     const joinBtn = document.getElementById('btn-join-room');
-    joinBtn.disabled = false;
-    joinBtn.textContent = 'Join Stream';
+    if (joinBtn) {
+        joinBtn.disabled = false;
+        joinBtn.textContent = 'Join Stream';
+    }
 
-    // Clear URL without reloading
     window.history.replaceState({}, document.title, window.location.pathname);
-
     showView('home');
 }
 
-// Stop Buttons
 document.getElementById('btn-stop-streaming').addEventListener('click', stopAndResetApp);
 document.getElementById('btn-stop-monitoring').addEventListener('click', stopAndResetApp);
+document.getElementById('btn-cancel-monitor').addEventListener('click', stopAndResetApp);
 
-// Toggle Camera Preview Button
 document.getElementById('btn-toggle-camera-view').addEventListener('click', () => {
     const previewContainer = document.querySelector('.camera-preview');
     const toggleBtn = document.getElementById('btn-toggle-camera-view');
@@ -309,40 +465,32 @@ document.getElementById('btn-toggle-camera-view').addEventListener('click', () =
         toggleBtn.querySelector('.svg-eye-closed').style.display = 'none';
         toggleBtn.querySelector('.text').textContent = 'Hide Preview';
     } else {
-        previewContainer.style.opacity = '0'; // Hide visually but don't disrupt stream
+        previewContainer.style.opacity = '0';
         toggleBtn.querySelector('.svg-eye-open').style.display = 'none';
         toggleBtn.querySelector('.svg-eye-closed').style.display = 'block';
         toggleBtn.querySelector('.text').textContent = 'Show Preview';
     }
 });
 
-// Cancel Buttons
-document.getElementById('btn-cancel-setup').addEventListener('click', stopAndResetApp);
-document.getElementById('btn-cancel-monitor').addEventListener('click', stopAndResetApp);
-
-// Fullscreen Button
 document.getElementById('btn-fullscreen').addEventListener('click', () => {
     const monitorView = document.getElementById('view-monitoring-active');
-
     if (!document.fullscreenElement) {
-        if (monitorView.requestFullscreen) {
-            monitorView.requestFullscreen();
-        } else if (monitorView.webkitRequestFullscreen) { /* Safari */
-            monitorView.webkitRequestFullscreen();
-        } else if (monitorView.msRequestFullscreen) { /* IE11 */
-            monitorView.msRequestFullscreen();
-        }
+        if (monitorView.requestFullscreen) monitorView.requestFullscreen();
         document.getElementById('btn-fullscreen').querySelector('.svg-enter').style.display = 'none';
         document.getElementById('btn-fullscreen').querySelector('.svg-exit').style.display = 'block';
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) { /* Safari */
-            document.webkitExitFullscreen();
-        } else if (document.msExitFullscreen) { /* IE11 */
-            document.msExitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
         document.getElementById('btn-fullscreen').querySelector('.svg-enter').style.display = 'block';
         document.getElementById('btn-fullscreen').querySelector('.svg-exit').style.display = 'none';
     }
+});
+
+document.getElementById('btn-copy-url-small').addEventListener('click', () => {
+    const url = document.getElementById('share-url-small').textContent;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('btn-copy-url-small');
+        const originalText = btn.textContent;
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = originalText, 2000);
+    });
 });

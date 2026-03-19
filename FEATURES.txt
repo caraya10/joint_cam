@@ -1,0 +1,34 @@
+<NOTE>
+1. New features are written above the existing features. So feature definitions higher in the doc supersede feature definitions lower in the doc.
+</NOTE>
+
+<Improvement: Faster camera access>
+Current state:  When a user connects to a camera they are taken to a page where they then have to press a button to actually connect.  
+That is unneccessary.  The user should be connected to the camera immediately.  
+
+Desired state:  When a user clicks on a camera, they should be connected to the camera immediately.  
+</Improvement>
+
+<Feature: Shared Cameras>
+1. Users should be able to to log in using their Google account.
+In the landing page the current two buttons there should in within a larger "card" which says "Quick Connect". Below
+that card the user should see a button that says "Login with Google" in order to log in.
+
+2. Once logged in, users should be able to see a list of the cameras they have created or have access to.  If they click on one of those then they should be able to connect to the stream.  They should also be able to create a new camera.
+To support this, cameras will need to support stream to multiple downstream monitors. When a user creates a camera they can give it a name but by default it will be given a name like "Camera 1". Make sure that the names are unique for a given user.
+
+3. Users should be able to share a camera with other users.
+Users can select to select other users to share their cameras with.  Whenever they create a camera, it should be accessible to their shared users.
+
+User flows and UI
+Logged in page
+This page shows a list of live cameras and also a list of users which this user shares cameras with.
+
+Adding another user to share cameras with
+The user can click on a button to add another user to share cameras with.  This will then show a textfield where the user can add the email address of the user they want to share cameras with.
+From then on all cameras created by the user will be shared with that user.
+
+Creating a camera
+When a user creates a camera.  The see a small text field show next to the button where theyn can specify the name.  Its also just given a default name.
+The user does not need to share the camera explicitly since it will be shared with all users who have access to the camera.
+</Feature>
