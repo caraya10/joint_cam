@@ -212,9 +212,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on('stop-stream', (roomId) => {
-        console.log(`Stopping stream for room ${roomId}`);
-        delete appData.cameras[roomId];
-        socket.to(roomId).emit('stream-stopped');
+        const cam = appData.cameras[roomId];
+        if (cam && cam.hostSocketId === socket.id) {
+            console.log(`Host ${socket.id} stopping stream for room ${roomId}`);
+            delete appData.cameras[roomId];
+            socket.to(roomId).emit('stream-stopped');
+        } else {
+            console.log(`Non-host ${socket.id} tried to stop stream for room ${roomId}`);
+        }
     });
 
     socket.on('disconnect', () => {

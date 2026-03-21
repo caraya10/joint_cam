@@ -426,7 +426,7 @@ function stopAndResetApp() {
     Object.values(peerConnections).forEach(pc => pc.close());
     peerConnections = {};
 
-    if (currentRoomId) {
+    if (currentRoomId && myRole === 'camera') {
         socket.emit('stop-stream', currentRoomId);
     }
 
