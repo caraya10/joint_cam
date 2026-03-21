@@ -42,7 +42,7 @@
                 <div id="auth-logged-out">
                     <!-- GSI Button Container -->
                     <div id="g_id_signin" style="display: flex; justify-content: center;"></div>
-                    
+
                     <!-- Old button removed or hidden if needed for transition, but I'll remove it as requested -->
                     <!-- Dev Login Buttons -->
                     <div id="dev-login-container" class="hidden">
@@ -67,26 +67,28 @@
         <!-- view: dashboard -->
         <main id="view-dashboard" class="view hidden">
             <header class="status-header">
-                <h2>My Cameras</h2>
                 <div class="user-info-dash">
                     <span id="dash-user-name"></span>
                     <button id="btn-logout-dash" class="btn btn-xs btn-ghost">Logout</button>
                 </div>
             </header>
 
-            <div class="creation-bar">
-                <input type="text" id="input-new-camera-name" placeholder="Camera Name (optional)">
-                <button id="btn-new-camera" class="btn btn-sm btn-secondary">Start Camera</button>
+            <div class="card">
+                <h3>My Cameras</h3>
+                <div class="creation-bar">
+                    <input type="text" id="input-new-camera-name" placeholder="Camera Name (optional)">
+                    <button id="btn-new-camera" class="btn btn-sm btn-secondary">Start Camera</button>
+                </div>
+
+                <div id="camera-list" class="camera-list">
+                    <!-- Camera items items will be injected here -->
+                    <p class="empty-msg">Loading cameras...</p>
+                </div>
             </div>
 
-            <div id="camera-list" class="camera-list">
-                <!-- Camera items items will be injected here -->
-                <p class="empty-msg">Loading cameras...</p>
-            </div>
-
-            <div class="sharing-management">
-                <h3>Autoshare with these users</h3>
-                <p class="subtext">New cameras will automatically be shared with these emails.</p>
+            <div class="card">
+                <h3>Share Users</h3>
+                <p class="subtext">New cameras will automatically be shared with these users.</p>
                 <div class="input-group">
                     <input type="email" id="input-new-share-email" placeholder="Enter email address">
                     <button id="btn-add-share-email" class="btn btn-sm btn-primary">Add</button>
