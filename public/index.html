@@ -60,7 +60,6 @@
                         <span id="user-display-name"></span>
                         <button id="btn-logout" class="btn btn-sm btn-ghost">Logout</button>
                     </div>
-                    <button id="btn-go-dashboard" class="btn btn-primary btn-large">Go to My Dashboard</button>
                 </div>
             </div>
         </main>
@@ -69,6 +68,10 @@
         <main id="view-dashboard" class="view hidden">
             <header class="status-header">
                 <h2>My Cameras</h2>
+                <div class="user-info-dash">
+                    <span id="dash-user-name"></span>
+                    <button id="btn-logout-dash" class="btn btn-xs btn-ghost">Logout</button>
+                </div>
             </header>
 
             <div class="creation-bar">
@@ -93,9 +96,6 @@
                 </div>
             </div>
 
-            <footer class="dashboard-footer">
-                <button id="btn-dashboard-back" class="btn btn-ghost">Back to Home</button>
-            </footer>
         </main>
 
         <!-- view: share camera modal (standalone share) -->

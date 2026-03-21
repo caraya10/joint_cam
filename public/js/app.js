@@ -98,6 +98,7 @@ async function checkAuth() {
             loggedOutDiv.classList.add('hidden');
             loggedInDiv.classList.remove('hidden');
             document.getElementById('user-display-name').textContent = currentUser.name;
+            document.getElementById('dash-user-name').textContent = currentUser.name;
 
             // Auto-navigate to dashboard if not joining a specific room
             const urlParams = new URLSearchParams(window.location.search);
@@ -146,12 +147,8 @@ document.getElementById('btn-logout').addEventListener('click', () => {
     window.location.href = '/logout';
 });
 
-document.getElementById('btn-go-dashboard').addEventListener('click', () => {
-    loadDashboard();
-});
-
-document.getElementById('btn-dashboard-back').addEventListener('click', () => {
-    showView('home');
+document.getElementById('btn-logout-dash')?.addEventListener('click', () => {
+    window.location.href = '/logout';
 });
 
 /* ================== Dashboard Flow ================== */

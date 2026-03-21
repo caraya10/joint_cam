@@ -306,6 +306,19 @@ p {
     justify-content: space-between;
 }
 
+.user-info-dash {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.user-info-dash span {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
 .creation-bar {
     display: flex;
     gap: 12px;
