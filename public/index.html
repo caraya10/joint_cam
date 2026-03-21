@@ -114,27 +114,27 @@
                 <button id="btn-cancel-share" class="btn btn-danger btn-outline">Cancel</button>
             </footer>
         </main>
-
         <!-- view: streaming -->
         <main id="view-streaming" class="view hidden">
-            <div class="stream-backdrop">
-                <div class="live-indicator">
-                    <span class="dot"></span> LIVE
+            <div class="streaming-layout">
+                <div class="stream-backdrop">
+                    <div class="live-indicator">
+                        <span class="dot"></span> LIVE
+                    </div>
+                    <div class="camera-preview">
+                        <video id="local-video" autoplay muted playsinline></video>
+                    </div>
                 </div>
 
-                <div class="camera-preview">
-                    <video id="local-video" autoplay muted playsinline></video>
-                </div>
-            </div>
-
-            <!-- Unified Invite Section -->
-            <div class="invite-overlay">
-                <div class="qr-container-small">
-                    <div id="qrcode-small"></div>
-                </div>
-                <div class="url-share-small">
-                    <span id="share-url-small" class="url-text"></span>
-                    <button id="btn-copy-url-small" class="btn btn-xs btn-ghost">Copy</button>
+                <div class="card invite-card">
+                    <h3>Ways to Connect</h3>
+                    <div class="qr-container-streaming">
+                        <div id="qrcode-streaming"></div>
+                    </div>
+                    <div class="url-share-streaming">
+                        <span id="share-url-streaming" class="url-text"></span>
+                        <button id="btn-copy-url-streaming" class="btn btn-sm btn-primary">Copy Link</button>
+                    </div>
                 </div>
             </div>
 

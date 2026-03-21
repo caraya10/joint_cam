@@ -343,11 +343,11 @@ async function startCameraStream(roomId, immediate = false) {
     const baseUrl = configTargetHost || window.location.origin;
     const shareUrl = `${baseUrl}?r=${currentRoomId}`;
 
-    // Render small QR and Link in streaming overlay
-    document.getElementById('share-url-small').textContent = shareUrl;
-    document.getElementById('qrcode-small').innerHTML = '';
-    new QRCode(document.getElementById('qrcode-small'), {
-        text: shareUrl, width: 110, height: 110, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H
+    // Render QR and Link in streaming card
+    document.getElementById('share-url-streaming').textContent = shareUrl;
+    document.getElementById('qrcode-streaming').innerHTML = '';
+    new QRCode(document.getElementById('qrcode-streaming'), {
+        text: shareUrl, width: 140, height: 140, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H
     });
 
     socket.emit('join-room', currentRoomId, 'camera');
@@ -493,7 +493,11 @@ function stopAndResetApp() {
     }
 
     window.history.replaceState({}, document.title, window.location.pathname);
-    showView('home');
+    if (currentUser) {
+        loadDashboard();
+    } else {
+        showView('home');
+    }
 }
 
 document.getElementById('btn-stop-streaming').addEventListener('click', stopAndResetApp);
@@ -530,10 +534,10 @@ document.getElementById('btn-fullscreen').addEventListener('click', () => {
     }
 });
 
-document.getElementById('btn-copy-url-small').addEventListener('click', () => {
-    const url = document.getElementById('share-url-small').textContent;
+document.getElementById('btn-copy-url-streaming').addEventListener('click', () => {
+    const url = document.getElementById('share-url-streaming').textContent;
     navigator.clipboard.writeText(url).then(() => {
-        const btn = document.getElementById('btn-copy-url-small');
+        const btn = document.getElementById('btn-copy-url-streaming');
         const originalText = btn.textContent;
         btn.textContent = 'Copied!';
         setTimeout(() => btn.textContent = originalText, 2000);
