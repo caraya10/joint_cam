@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Main Style -->
     <link rel="stylesheet" href="css/style.css">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
@@ -38,10 +40,10 @@
 
             <div class="auth-section">
                 <div id="auth-logged-out">
-                    <button id="btn-login-google" class="btn btn-primary btn-large">
-                        <span class="icon">G</span>
-                        <span class="text">Login with Google</span>
-                    </button>
+                    <!-- GSI Button Container -->
+                    <div id="g_id_signin" style="display: flex; justify-content: center;"></div>
+                    
+                    <!-- Old button removed or hidden if needed for transition, but I'll remove it as requested -->
                     <!-- Dev Login Buttons -->
                     <div id="dev-login-container" class="hidden">
                         <p class="subtext" style="text-align:center; margin: 16px 0 8px;">Dev Bypass</p>

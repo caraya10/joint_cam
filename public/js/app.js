@@ -107,6 +107,12 @@ async function checkAuth() {
         } else {
             loggedOutDiv.classList.remove('hidden');
             loggedInDiv.classList.add('hidden');
+            
+            // Initialize GSI if not logged in
+            if (config.GOOGLE_CLIENT_ID && window.google) {
+                initGSI(config.GOOGLE_CLIENT_ID);
+            }
+
             if (config.IS_DEV_LOGIN) {
                 document.getElementById('dev-login-container').classList.remove('hidden');
             }
@@ -116,9 +122,17 @@ async function checkAuth() {
     }
 }
 
-document.getElementById('btn-login-google').addEventListener('click', () => {
-    window.location.href = '/auth/google';
-});
+function initGSI(clientId) {
+    google.accounts.id.initialize({
+        client_id: clientId,
+        login_uri: window.location.origin + '/auth/gsi/callback',
+        ux_mode: 'redirect'
+    });
+    google.accounts.id.renderButton(
+        document.getElementById('g_id_signin'),
+        { theme: 'outline', size: 'large', width: 240 }
+    );
+}
 
 document.getElementById('btn-login-dev-1')?.addEventListener('click', () => {
     window.location.href = '/auth/dev-login/1';

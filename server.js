@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -5,11 +6,14 @@ const path = require('path');
 const session = require('express-session');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
+const { OAuth2Client } = require('google-auth-library');
 const { loadData, saveData } = require('./storage');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const DEV_LOGIN = process.env.DEV_LOGIN === 'true';
 
@@ -66,6 +70,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 if (DEV_LOGIN) {
     app.get('/auth/dev-login/:id', (req, res) => {
@@ -89,6 +94,43 @@ if (DEV_LOGIN) {
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/' }), (req, res) => {
     res.redirect('/');
+});
+
+app.post('/auth/gsi/callback', async (req, res) => {
+    const { credential } = req.body;
+    if (!credential) {
+        return res.status(400).send('No credential provided');
+    }
+
+    try {
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: process.env.GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        
+        const user = {
+            id: payload.sub,
+            displayName: payload.name,
+            email: payload.email
+        };
+
+        if (!appData.users[user.id]) {
+            appData.users[user.id] = { email: user.email, name: user.displayName, sharingList: [] };
+        } else {
+            appData.users[user.id].email = user.email;
+            appData.users[user.id].name = user.displayName;
+        }
+        saveData(appData);
+
+        req.login(user, (err) => {
+            if (err) return res.status(500).send('Login failed');
+            res.redirect('/');
+        });
+    } catch (e) {
+        console.error('GSI verification failed', e);
+        res.status(401).send('Invalid credential');
+    }
 });
 app.get('/logout', (req, res) => {
     req.logout((err) => {
@@ -164,7 +206,8 @@ app.post('/api/cameras', (req, res) => {
 app.get('/config.json', (req, res) => {
     res.json({
         HOST_DOMAIN: process.env.HOST_DOMAIN || '',
-        IS_DEV_LOGIN: DEV_LOGIN
+        IS_DEV_LOGIN: DEV_LOGIN,
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID
     });
 });
 
