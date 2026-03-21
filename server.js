@@ -144,7 +144,27 @@ app.get('/api/user', (req, res) => res.json(req.user || null));
 app.get('/api/user/sharing', (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const user = appData.users[req.user.id];
-    res.json(user.sharingList || []);
+    const detailedSharingList = (user.sharingList || []).map(email => {
+        const foundUser = Object.values(appData.users).find(u => u.email === email);
+        return {
+            email: email,
+            name: foundUser ? foundUser.name : null
+        };
+    });
+    res.json(detailedSharingList);
+});
+
+app.delete('/api/user/sharing', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ error: 'Email required' });
+
+    const user = appData.users[req.user.id];
+    if (user.sharingList) {
+        user.sharingList = user.sharingList.filter(e => e !== email);
+        saveData(appData);
+    }
+    res.json({ success: true, sharingList: user.sharingList || [] });
 });
 
 app.post('/api/user/sharing', (req, res) => {

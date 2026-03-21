@@ -3,9 +3,10 @@ description: Running a regression test suite based on the functionality.md docum
 ---
 
 1.  **Preparation**:
-    - Ensure `DEV_LOGIN=true` is set in `.env` to allow automated testing without real Google credentials.
-    - Start the signaling server with `node server.js`.
-    - Verify that the server is running on the expected port (e.g., 8080).
+    - Kill any running version of the server
+    - Start the server with `DEV_LOGIN=true`, don't touch the .env file. Also start the server at port 8081 since I may have a server running on 8080.
+    - Verify that the server is running on the expected port (e.g., 8081).
+  
 
 2.  **Read Functionality**: View the latest `functionality.md` in the artifacts directory to identify the core features and regression testing plan.
 
@@ -27,4 +28,7 @@ description: Running a regression test suite based on the functionality.md docum
     - Create a `test_results.md` artifact summarizing the pass/fail status of each test case.
     - Notify the user with the final report.
 
-6.  **Cleanup**: Terminate the local server and restore `.env` if needed.
+
+NOTES:
+    - When you find problems try to figure out what the standard way of fixing it is.  See what standard methods or components can be used to solve the problem.  If you are writing something custom where a standard thing should be used that should be a red flag for you.
+    - You don't need to test the google sign in.  Just use the test users to test functionality.

@@ -378,15 +378,44 @@ p {
     gap: 8px;
 }
 
-.sharing-chip {
-    background: rgba(255, 255, 255, 0.05);
+.sharing-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.sharing-item {
+    background: var(--bg-surface);
     border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-pill);
-    padding: 6px 14px;
-    font-size: 0.8125rem;
+    border-radius: var(--radius-md);
+    padding: 16px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    justify-content: space-between;
+    transition: all var(--transition-fast);
+}
+
+.sharing-item:hover {
+    background: var(--bg-elevated);
+    border-color: var(--border-strong);
+}
+
+.sharing-info h4 {
+    margin-bottom: 2px;
+    font-size: 1rem;
+}
+
+.sharing-info .subtext {
+    font-size: 0.8rem;
+    margin-bottom: 12px;
+}
+
+.empty-msg-sm {
+    text-align: center;
+    color: var(--text-tertiary);
+    padding: 24px 0;
+    font-size: 0.875rem;
 }
 
 /* Streaming View */

@@ -108,7 +108,7 @@ async function checkAuth() {
         } else {
             loggedOutDiv.classList.remove('hidden');
             loggedInDiv.classList.add('hidden');
-            
+
             // Initialize GSI if not logged in
             if (config.GOOGLE_CLIENT_ID && window.google) {
                 initGSI(config.GOOGLE_CLIENT_ID);
@@ -209,12 +209,46 @@ async function refreshCameraList() {
         const sharingContainer = document.getElementById('sharing-list');
         if (sharingContainer) {
             sharingContainer.innerHTML = '';
-            sharingList.forEach(email => {
-                const chip = document.createElement('div');
-                chip.className = 'sharing-chip';
-                chip.innerHTML = `<span>${email}</span>`;
-                sharingContainer.appendChild(chip);
-            });
+            if (sharingList.length === 0) {
+                sharingContainer.innerHTML = '<p class="empty-msg-sm">No users shared yet.</p>';
+            } else {
+                sharingList.forEach(user => {
+                    const item = document.createElement('div');
+                    item.className = 'sharing-item';
+                    const userName = user.name || 'Unknown User';
+
+                    item.innerHTML = `
+                        <div class="sharing-info">
+                            <h4>${user.email}</h4>
+                        </div>
+                        <div class="sharing-actions">
+                            <button class="btn btn-sm btn-outline btn-danger btn-remove-share" data-email="${user.email}">Remove</button>
+                        </div>
+                    `;
+                    sharingContainer.appendChild(item);
+                });
+
+                // Add event listeners for removal
+                sharingContainer.querySelectorAll('.btn-remove-share').forEach(btn => {
+                    btn.addEventListener('click', async (e) => {
+                        const email = btn.getAttribute('data-email');
+                        if (confirm(`Remove ${email} from sharing list?`)) {
+                            try {
+                                const res = await fetch('/api/user/sharing', {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ email })
+                                });
+                                if (res.ok) {
+                                    refreshCameraList();
+                                }
+                            } catch (err) {
+                                console.error("Failed to remove sharing email", err);
+                            }
+                        }
+                    });
+                });
+            }
         }
 
     } catch (e) {
