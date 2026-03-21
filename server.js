@@ -288,12 +288,25 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('User disconnected:', socket.id);
 
-        // Find and remove any ephemeral cameras hosted by this socket
+        // Find any ephemeral cameras hosted by this socket
         for (const [id, cam] of Object.entries(appData.cameras)) {
             if (cam.hostSocketId === socket.id) {
-                console.log(`Removing ephemeral camera ${id} due to host disconnect`);
-                delete appData.cameras[id];
-                io.to(id).emit('stream-stopped');
+                console.log(`Host ${socket.id} disconnected for camera ${id}. Waiting 10s grace period...`);
+                // Use a closure to capture the socket ID and room ID
+                const disconnectedSocketId = socket.id;
+                const roomId = id;
+                
+                setTimeout(() => {
+                    const currentCam = appData.cameras[roomId];
+                    // Only delete if the camera still exists AND the host hasn't changed (reconnected)
+                    if (currentCam && currentCam.hostSocketId === disconnectedSocketId) {
+                        console.log(`Grace period expired for camera ${roomId}. Removing.`);
+                        delete appData.cameras[roomId];
+                        io.to(roomId).emit('stream-stopped');
+                    } else if (currentCam) {
+                        console.log(`Host reconnected for camera ${roomId}. Grace period cancelled.`);
+                    }
+                }, 10000); // 10 second grace period
             }
         }
     });

@@ -2,6 +2,15 @@
 
 const socket = io();
 
+// Resilience: Re-join room on reconnection
+socket.on('connect', () => {
+    console.log('Socket connected:', socket.id);
+    if (currentRoomId && myRole) {
+        console.log(`Re-joining room ${currentRoomId} as ${myRole}`);
+        socket.emit('join-room', currentRoomId, myRole);
+    }
+});
+
 // STUN Servers for WebRTC NAT Traversal
 const peerConnectionConfig = {
     iceServers: [
