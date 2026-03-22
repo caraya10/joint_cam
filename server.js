@@ -245,6 +245,8 @@ io.on('connection', (socket) => {
                 appData.cameras[roomId].hostSocketId = socket.id;
                 console.log(`Camera ${roomId} is now hosted by ${socket.id}`);
             }
+        } else if (role === 'monitor') {
+            socket.to(roomId).emit('monitor-joined', socket.id);
         }
 
         socket.to(roomId).emit('user-joined', socket.id, role);
