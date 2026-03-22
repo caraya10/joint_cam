@@ -22,7 +22,7 @@ steps:
       - '--port'
       - '8080'
       # Set the HOST_DOMAIN environment variable used by frontend
-      - '--set-env-vars=GCS_BUCKET_NAME=$_GCS_BUCKET_NAME,HOST_DOMAIN=$_HOST_DOMAIN'
+      - '--set-env-vars=GCS_BUCKET_NAME=$_GCS_BUCKET_NAME,HOST_DOMAIN=$_HOST_DOMAIN,GA_MEASUREMENT_ID=$_GA_MEASUREMENT_ID'
       - '--update-secrets=GOOGLE_CLIENT_ID=GOOGLE_CLIENT_ID:latest,GOOGLE_CLIENT_SECRET=GOOGLE_CLIENT_SECRET:latest'
 
 images:

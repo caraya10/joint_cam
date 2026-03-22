@@ -227,7 +227,8 @@ app.get('/config.json', (req, res) => {
     res.json({
         HOST_DOMAIN: process.env.HOST_DOMAIN || '',
         IS_DEV_LOGIN: DEV_LOGIN,
-        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID
+        GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
+        GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID
     });
 });
 

@@ -11,6 +11,32 @@ socket.on('connect', () => {
     }
 });
 
+// Analytics Helper
+function trackEvent(name, params = {}) {
+    if (typeof gtag === 'function') {
+        gtag('event', name, params);
+    }
+}
+
+// Dynamic Google Analytics Initialization
+function initGA(id) {
+    if (!id) return;
+    
+    // 1. Inject gtag.js script
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+    document.head.appendChild(script);
+
+    // 2. Initialize layer
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function() { dataLayer.push(arguments); };
+    gtag('js', new Date());
+    gtag('config', id);
+    
+    console.log(`Google Analytics initialized with ID: ${id}`);
+}
+
 // STUN Servers for WebRTC NAT Traversal
 const peerConnectionConfig = {
     iceServers: [
@@ -76,6 +102,9 @@ window.onload = async () => {
         if (config.HOST_DOMAIN) {
             configTargetHost = config.HOST_DOMAIN.startsWith('http') ? config.HOST_DOMAIN : `https://${config.HOST_DOMAIN}`;
         }
+        if (config.GA_MEASUREMENT_ID) {
+            initGA(config.GA_MEASUREMENT_ID);
+        }
     } catch (e) {
         console.error("Could not load config", e);
     }
@@ -96,6 +125,10 @@ async function checkAuth() {
     try {
         const res = await fetch('/api/user');
         currentUser = await res.json();
+
+        if (currentUser) {
+            trackEvent('login', { method: 'google', email: currentUser.email });
+        }
 
         const loggedOutDiv = document.getElementById('auth-logged-out');
         const loggedInDiv = document.getElementById('auth-logged-in');
@@ -348,6 +381,7 @@ async function startCameraStream(roomId, immediate = false) {
 
     // Unified: Go straight to streaming view
     showView('streaming');
+    trackEvent('camera_start', { room_id: currentRoomId, camera_name: roomId }); // roomId is name if created via dashboard
 
     const baseUrl = configTargetHost || window.location.origin;
     const shareUrl = `${baseUrl}?r=${currentRoomId}`;
@@ -414,6 +448,7 @@ function joinAsMonitor(roomId, immediate = false) {
     }
 
     socket.emit('join-room', currentRoomId, 'monitor');
+    trackEvent('monitor_join', { room_id: currentRoomId });
 
     const joinBtn = document.getElementById('btn-join-room');
     if (joinBtn) {
@@ -492,6 +527,11 @@ function stopAndResetApp() {
     document.querySelector('.camera-preview').style.opacity = '1';
     localVideo.srcObject = null;
     remoteVideo.srcObject = null;
+    
+    if (myRole) {
+        trackEvent('session_stop', { role: myRole, room_id: currentRoomId });
+    }
+
     currentRoomId = null;
     myRole = null;
 
