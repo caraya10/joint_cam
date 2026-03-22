@@ -276,19 +276,18 @@ async function refreshCameraList() {
                 sharingContainer.querySelectorAll('.btn-remove-share').forEach(btn => {
                     btn.addEventListener('click', async (e) => {
                         const email = btn.getAttribute('data-email');
-                        if (confirm(`Remove ${email} from sharing list?`)) {
-                            try {
-                                const res = await fetch('/api/user/sharing', {
-                                    method: 'DELETE',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ email })
-                                });
-                                if (res.ok) {
-                                    refreshCameraList();
-                                }
-                            } catch (err) {
-                                console.error("Failed to remove sharing email", err);
+                        // Use a non-blocking confirmation or just proceed for better UX in this simple app
+                        try {
+                            const res = await fetch(`/api/user/sharing?email=${encodeURIComponent(email)}`, {
+                                method: 'DELETE'
+                            });
+                            if (res.ok) {
+                                refreshCameraList(); // Refresh the list
+                            } else {
+                                console.error("Failed to remove sharing email", res.status);
                             }
+                        } catch (err) {
+                            console.error("Failed to remove sharing email", err);
                         }
                     });
                 });

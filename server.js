@@ -155,16 +155,30 @@ app.get('/api/user/sharing', (req, res) => {
 });
 
 app.delete('/api/user/sharing', (req, res) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const { email } = req.body;
-    if (!email) return res.status(400).json({ error: 'Email required' });
+    try {
+        if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+        const email = (req.body && req.body.email) || req.query.email;
+        console.log(`Attempting to remove share: ${email} for user: ${req.user.id}`);
+        
+        if (!email) return res.status(400).json({ error: 'Email required' });
 
-    const user = appData.users[req.user.id];
-    if (user.sharingList) {
-        user.sharingList = user.sharingList.filter(e => e !== email);
-        saveData(appData);
+        const user = appData.users[req.user.id];
+        if (!user) {
+            console.error(`User ${req.user.id} not found in appData.users`);
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        if (user.sharingList) {
+            const initialLen = user.sharingList.length;
+            user.sharingList = user.sharingList.filter(e => e !== email);
+            console.log(`Sharing list reduced from ${initialLen} to ${user.sharingList.length}`);
+            saveData(appData);
+        }
+        res.json({ success: true, sharingList: user.sharingList || [] });
+    } catch (err) {
+        console.error("Internal error in DELETE /api/user/sharing:", err);
+        res.status(500).json({ error: 'Internal Server Error', details: err.message });
     }
-    res.json({ success: true, sharingList: user.sharingList || [] });
 });
 
 app.post('/api/user/sharing', (req, res) => {
