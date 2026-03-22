@@ -183,10 +183,13 @@
 
         <!-- view: monitoring (active) -->
         <main id="view-monitoring-active" class="view hidden monitor-full">
-            <video id="remote-video" autoplay playsinline></video>
+            <video id="remote-video" autoplay muted playsinline></video>
 
             <div class="overlay-controls">
                 <div class="live-badge">LIVE</div>
+                <button id="btn-unmute" class="btn btn-primary btn-pill">
+                    <span class="icon">🔊</span> Unmute
+                </button>
                 <button id="btn-fullscreen" class="btn btn-danger btn-icon" title="Toggle Fullscreen">
                     <span class="icon">
                         <svg class="svg-enter" viewBox="0 0 24 24" width="24" height="24" stroke="currentColor"

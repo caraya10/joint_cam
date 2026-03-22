@@ -109,19 +109,21 @@ window.onload = async () => {
         console.error("Could not load config", e);
     }
 
-    // 2. Check Auth
-    await checkAuth();
-
-    // 3. Handle URL params
+    // 2. Handle URL params FIRST (to prevent redirect flashes)
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('r');
+    
+    // 3. Check Auth
+    await checkAuth(!!room); // Pass flag to skip auto-dashboard if room joining
+
     if (room) {
+        console.log(`Auto-joining room from URL: ${room}`);
         document.getElementById('input-room-id').value = room;
-        joinAsMonitor(room, true); // Immediate join if coming from link
+        joinAsMonitor(room, true);
     }
 };
 
-async function checkAuth() {
+async function checkAuth(isJoiningRoom = false) {
     try {
         const res = await fetch('/api/user');
         currentUser = await res.json();
@@ -133,6 +135,7 @@ async function checkAuth() {
         const loggedOutDiv = document.getElementById('auth-logged-out');
         const loggedInDiv = document.getElementById('auth-logged-in');
 
+        // Reuse config if already loaded in window.onload
         const resConfig = await fetch('/config.json');
         const config = await resConfig.json();
 
@@ -143,8 +146,7 @@ async function checkAuth() {
             document.getElementById('dash-user-name').textContent = currentUser.name;
 
             // Auto-navigate to dashboard if not joining a specific room
-            const urlParams = new URLSearchParams(window.location.search);
-            if (!urlParams.get('r')) {
+            if (!isJoiningRoom) {
                 loadDashboard();
             }
         } else {
@@ -447,8 +449,17 @@ function joinAsMonitor(roomId, immediate = false) {
         showView('monitoringActive');
     }
 
-    socket.emit('join-room', currentRoomId, 'monitor');
-    trackEvent('monitor_join', { room_id: currentRoomId });
+    const emitJoin = () => {
+        console.log(`Emitting join-room for ${currentRoomId}`);
+        socket.emit('join-room', currentRoomId, 'monitor');
+        trackEvent('monitor_join', { room_id: currentRoomId });
+    };
+
+    if (socket.connected) {
+        emitJoin();
+    } else {
+        socket.once('connect', emitJoin);
+    }
 
     const joinBtn = document.getElementById('btn-join-room');
     if (joinBtn) {
@@ -485,6 +496,12 @@ function setupPeerConnection(targetId) {
     pc.ontrack = (event) => {
         if (myRole === 'monitor') {
             remoteVideo.srcObject = event.streams[0];
+            // Ensure video plays and show a brief unmute prompt
+            remoteVideo.play().catch(err => console.warn("Autoplay failed:", err));
+            
+            // Show unmute button if currently muted
+            document.getElementById('btn-unmute').classList.remove('hidden');
+            remoteVideo.muted = true; 
         }
     };
 
@@ -541,6 +558,9 @@ function stopAndResetApp() {
         joinBtn.textContent = 'Join Stream';
     }
 
+    // Reset mute state
+    remoteVideo.muted = true;
+
     window.history.replaceState({}, document.title, window.location.pathname);
     if (currentUser) {
         loadDashboard();
@@ -552,6 +572,11 @@ function stopAndResetApp() {
 document.getElementById('btn-stop-streaming').addEventListener('click', stopAndResetApp);
 document.getElementById('btn-stop-monitoring').addEventListener('click', stopAndResetApp);
 document.getElementById('btn-cancel-monitor').addEventListener('click', stopAndResetApp);
+
+document.getElementById('btn-unmute').addEventListener('click', () => {
+    remoteVideo.muted = false;
+    document.getElementById('btn-unmute').classList.add('hidden');
+});
 
 document.getElementById('btn-toggle-camera-view').addEventListener('click', () => {
     const previewContainer = document.querySelector('.camera-preview');
