@@ -1,4 +1,4 @@
-// StreamSync - WebRTC & App Logic
+// ArayaLogic QuickCam - WebRTC & App Logic
 
 const socket = io();
 
@@ -413,7 +413,7 @@ socket.on('user-joined', async (monitorId, role) => {
             await pc.setLocalDescription(offer);
             socket.emit('offer', offer, currentRoomId, monitorId);
         } catch (err) {
-            console.error("Failed to establish connection:", err);
+            console.error("ArayaLogic QuickCam: Socket connection error", err);
         }
     }
 });

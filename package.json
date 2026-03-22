@@ -1,7 +1,7 @@
 {
-  "name": "webrtc-streamer",
+  "name": "arayalogic-quickcam",
   "version": "1.0.0",
-  "description": "",
+  "description": "ArayaLogic QuickCam - Peer-to-peer live streaming",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
