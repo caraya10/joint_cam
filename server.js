@@ -224,9 +224,11 @@ app.post('/api/cameras', (req, res) => {
     }
 
     const cameraId = Math.random().toString(36).substring(2, 12);
+    const cameraKey = Math.random().toString(36).substring(2, 12);
     appData.cameras[cameraId] = {
         name: finalName,
         owner: req.user.id,
+        key: cameraKey,
         sharedWith: [...(user.sharingList || [])],
         hostSocketId: null // To be filled on join-room
     };
@@ -251,15 +253,39 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Socket.IO
 io.on('connection', (socket) => {
 
-    socket.on('join-room', (roomId, role) => {
+    socket.on('join-room', (roomId, role, key) => {
+        const cam = appData.cameras[roomId];
+
+        if (cam) {
+            // Verify key if camera exists
+            if (cam.key !== key) {
+                console.log(`Join rejected for room ${roomId}: Invalid key`);
+                socket.emit('error', 'Invalid camera key');
+                return;
+            }
+        } else {
+            // If camera doesn't exist, only allow 'camera' role to create it (Quick Connect)
+            if (role === 'camera') {
+                console.log(`Creating ephemeral camera ${roomId} via Quick Connect`);
+                appData.cameras[roomId] = {
+                    name: `Quick Stream ${roomId}`,
+                    owner: 'anonymous',
+                    key: key,
+                    hostSocketId: socket.id
+                };
+            } else {
+                console.log(`Join rejected for room ${roomId}: Camera does not exist`);
+                socket.emit('error', 'Camera not found');
+                return;
+            }
+        }
+
         socket.join(roomId);
         console.log(`User ${socket.id} joined room ${roomId} as ${role}`);
 
         if (role === 'camera') {
-            if (appData.cameras[roomId]) {
-                appData.cameras[roomId].hostSocketId = socket.id;
-                console.log(`Camera ${roomId} is now hosted by ${socket.id}`);
-            }
+            appData.cameras[roomId].hostSocketId = socket.id;
+            console.log(`Camera ${roomId} is now hosted by ${socket.id}`);
         } else if (role === 'monitor') {
             socket.to(roomId).emit('monitor-joined', socket.id);
         }

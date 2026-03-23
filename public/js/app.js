@@ -5,9 +5,9 @@ const socket = io();
 // Resilience: Re-join room on reconnection
 socket.on('connect', () => {
     console.log('Socket connected:', socket.id);
-    if (currentRoomId && myRole) {
+    if (currentRoomId && myRole && currentRoomKey) {
         console.log(`Re-joining room ${currentRoomId} as ${myRole}`);
-        socket.emit('join-room', currentRoomId, myRole);
+        socket.emit('join-room', currentRoomId, myRole, currentRoomKey);
     }
 });
 
@@ -50,6 +50,7 @@ const peerConnectionConfig = {
 let peerConnections = {}; // Keyed by monitorSocketId
 let localStream;
 let currentRoomId;
+let currentRoomKey;
 let myRole; // 'camera' or 'monitor'
 let currentUser = null;
 let configTargetHost = '';
@@ -87,8 +88,8 @@ function showView(viewName) {
     }, 200);
 }
 
-// Generate random room ID
-function generateRoomId() {
+// Generate random string for IDs and keys
+function generateRandomId() {
     return Math.random().toString(36).substring(2, 12);
 }
 
@@ -112,14 +113,17 @@ window.onload = async () => {
     // 2. Handle URL params FIRST (to prevent redirect flashes)
     const urlParams = new URLSearchParams(window.location.search);
     const room = urlParams.get('r');
+    const key = urlParams.get('k');
     
     // 3. Check Auth
     await checkAuth(!!room); // Pass flag to skip auto-dashboard if room joining
 
-    if (room) {
+    if (room && key) {
         console.log(`Auto-joining room from URL: ${room}`);
         document.getElementById('input-room-id').value = room;
-        joinAsMonitor(room, true);
+        joinAsMonitor(room, key, true);
+    } else if (room) {
+        alert("This camera link is missing a security key.");
     }
 };
 
@@ -232,7 +236,7 @@ async function refreshCameraList() {
                         <div class="owner-info">${isOwner ? 'Your Camera' : 'Shared with you'}</div>
                     </div>
                     <div class="camera-actions">
-                        <button class="btn btn-sm btn-primary btn-monitor" data-id="${cam.id}">Monitor</button>
+                        <button class="btn btn-sm btn-primary btn-monitor" data-id="${cam.id}" data-key="${cam.key}">Monitor</button>
                     </div>
                 `;
                 list.appendChild(item);
@@ -242,7 +246,8 @@ async function refreshCameraList() {
             list.querySelectorAll('.btn-monitor').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const id = btn.getAttribute('data-id');
-                    joinAsMonitor(id, true);
+                    const key = btn.getAttribute('data-key');
+                    joinAsMonitor(id, key, true);
                 });
             });
         }
@@ -313,7 +318,7 @@ document.getElementById('btn-new-camera').addEventListener('click', async () => 
             const newCam = await res.json();
             nameInput.value = '';
             // Immediately start hosting the new camera
-            startCameraStream(newCam.id, true);
+            startCameraStream(newCam.id, newCam.key, true);
         }
     } catch (e) {
         console.error("Failed to create camera", e);
@@ -358,9 +363,10 @@ socket.on('stream-stopped', () => {
 
 document.getElementById('btn-home-camera').addEventListener('click', () => startCameraStream());
 
-async function startCameraStream(roomId, immediate = false) {
+async function startCameraStream(roomId, key, immediate = false) {
     myRole = 'camera';
-    currentRoomId = roomId || generateRoomId();
+    currentRoomId = roomId || generateRandomId();
+    currentRoomKey = key || generateRandomId();
 
     try {
         localStream = await navigator.mediaDevices.getUserMedia({
@@ -385,7 +391,7 @@ async function startCameraStream(roomId, immediate = false) {
     trackEvent('camera_start', { room_id: currentRoomId, camera_name: roomId }); // roomId is name if created via dashboard
 
     const baseUrl = configTargetHost || window.location.origin;
-    const shareUrl = `${baseUrl}?r=${currentRoomId}`;
+    const shareUrl = `${baseUrl}?r=${currentRoomId}&k=${currentRoomKey}`;
 
     // Render QR and Link in streaming card
     document.getElementById('share-url-streaming').textContent = shareUrl;
@@ -394,7 +400,7 @@ async function startCameraStream(roomId, immediate = false) {
         text: shareUrl, width: 140, height: 140, colorDark: "#000000", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.H
     });
 
-    socket.emit('join-room', currentRoomId, 'camera');
+    socket.emit('join-room', currentRoomId, 'camera', currentRoomKey);
 }
 
 socket.on('user-joined', async (monitorId, role) => {
@@ -430,12 +436,21 @@ socket.on('answer', async (answer, fromId) => {
 document.getElementById('btn-join-room').addEventListener('click', () => {
     const roomInput = document.getElementById('input-room-id').value.trim();
     if (!roomInput) return alert("Please enter a stream code.");
-    joinAsMonitor(roomInput, true);
+    // Manual join from home page doesn't have a key unless pasted in room field? 
+    // Actually, normally people use the URL. If they use the field, we'd need a key field too.
+    // Let's assume the ID field could contain "ID:KEY" or just "ID" (and warn).
+    if (roomInput.includes(':')) {
+        const [id, key] = roomInput.split(':');
+        joinAsMonitor(id, key, true);
+    } else {
+        alert("Stream code requires a key (format ID:KEY) or use the full sharing URL.");
+    }
 });
 
-function joinAsMonitor(roomId, immediate = false) {
+function joinAsMonitor(roomId, key, immediate = false) {
     myRole = 'monitor';
     currentRoomId = roomId;
+    currentRoomKey = key;
 
     if (dashboardInterval) {
         clearInterval(dashboardInterval);
@@ -448,7 +463,7 @@ function joinAsMonitor(roomId, immediate = false) {
 
     const emitJoin = () => {
         console.log(`Emitting join-room for ${currentRoomId}`);
-        socket.emit('join-room', currentRoomId, 'monitor');
+        socket.emit('join-room', currentRoomId, 'monitor', currentRoomKey);
         trackEvent('monitor_join', { room_id: currentRoomId });
     };
 
@@ -477,6 +492,11 @@ socket.on('offer', async (offer, cameraSocketId) => {
         socket.emit('answer', answer, currentRoomId, cameraSocketId);
         showView('monitoringActive'); // Switch if not already there
     }
+});
+
+socket.on('error', (msg) => {
+    alert(`Error: ${msg}`);
+    stopAndResetApp();
 });
 
 /* ================== Shared WebRTC Methods ================== */
@@ -548,6 +568,7 @@ function stopAndResetApp() {
     }
 
     currentRoomId = null;
+    currentRoomKey = null;
     myRole = null;
 
     const joinBtn = document.getElementById('btn-join-room');
