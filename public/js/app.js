@@ -427,8 +427,6 @@ socket.on('answer', async (answer, fromId) => {
 
 /* ================== Monitor Flow ================== */
 
-document.getElementById('btn-home-monitor').addEventListener('click', () => showView('monitorSetup'));
-
 document.getElementById('btn-join-room').addEventListener('click', () => {
     const roomInput = document.getElementById('input-room-id').value.trim();
     if (!roomInput) return alert("Please enter a stream code.");
@@ -540,7 +538,8 @@ function stopAndResetApp() {
         dashboardInterval = null;
     }
 
-    document.querySelector('.camera-preview').style.opacity = '1';
+    const preview = document.querySelector('.camera-preview');
+    if (preview) preview.style.opacity = '1';
     localVideo.srcObject = null;
     remoteVideo.srcObject = null;
     
@@ -581,7 +580,9 @@ document.getElementById('btn-toggle-camera-view').addEventListener('click', () =
     const previewContainer = document.querySelector('.camera-preview');
     const toggleBtn = document.getElementById('btn-toggle-camera-view');
 
-    if (previewContainer.style.opacity === '0') {
+    const currentOpacity = window.getComputedStyle(previewContainer).opacity;
+
+    if (currentOpacity === '0') {
         previewContainer.style.opacity = '1';
         toggleBtn.querySelector('.svg-eye-open').style.display = 'block';
         toggleBtn.querySelector('.svg-eye-closed').style.display = 'none';

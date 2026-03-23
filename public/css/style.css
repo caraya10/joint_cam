@@ -154,15 +154,14 @@ p {
 
 .btn-large {
     width: 100%;
-    padding: 24px 20px;
-    flex-direction: column;
+    padding: 20px 24px;
+    flex-direction: row;
     border-radius: var(--radius-lg);
-    gap: 8px;
+    gap: 16px;
 }
 
 .btn-large .icon {
-    font-size: 2.5rem;
-    margin-bottom: 4px;
+    font-size: 2rem;
 }
 
 .btn-large .text {
