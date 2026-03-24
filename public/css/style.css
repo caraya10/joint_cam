@@ -270,8 +270,8 @@ p {
 
 /* Home View */
 .hero-header {
-    margin-top: 10vh;
-    margin-bottom: 48px;
+    margin-top: 3vh;
+    margin-bottom: 3vh;
     text-align: center;
 }
 
@@ -419,7 +419,8 @@ p {
 
 /* Streaming View */
 .stream-backdrop {
-    flex: 2; /* Take more space than the invite card */
+    flex: 2;
+    /* Take more space than the invite card */
     display: flex;
     align-items: center;
     justify-content: center;
