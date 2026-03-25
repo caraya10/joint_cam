@@ -93,6 +93,15 @@ function generateRandomId() {
     return Math.random().toString(36).substring(2, 12);
 }
 
+// Theme Helper
+function applyTheme(theme) {
+    if (theme === 'dark') {
+        document.body.classList.add('theme-dark');
+    } else {
+        document.body.classList.remove('theme-dark');
+    }
+}
+
 /* ================== Initialization & Auth ================== */
 
 window.onload = async () => {
@@ -134,6 +143,7 @@ async function checkAuth(isJoiningRoom = false) {
 
         if (currentUser) {
             trackEvent('login', { method: 'google', email: currentUser.email });
+            applyTheme(currentUser.theme);
         }
 
         const loggedOutDiv = document.getElementById('auth-logged-out');
@@ -197,6 +207,32 @@ document.getElementById('btn-logout').addEventListener('click', () => {
 
 document.getElementById('btn-logout-dash')?.addEventListener('click', () => {
     window.location.href = '/logout';
+});
+
+document.getElementById('btn-theme-toggle')?.addEventListener('click', async () => {
+    if (!currentUser) return;
+    const newTheme = document.body.classList.contains('theme-dark') ? 'light' : 'dark';
+    
+    // Optimistic UI update
+    applyTheme(newTheme);
+
+    try {
+        const res = await fetch('/api/user/theme', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: newTheme })
+        });
+        if (res.ok) {
+            currentUser.theme = newTheme;
+        } else {
+            // Revert on failure
+            applyTheme(currentUser.theme);
+            console.error("Failed to save theme preference");
+        }
+    } catch (e) {
+        applyTheme(currentUser.theme);
+        console.error("Error saving theme preference", e);
+    }
 });
 
 /* ================== Dashboard Flow ================== */

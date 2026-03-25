@@ -43,7 +43,7 @@ passport.use(new GoogleStrategy({
         email: profile.emails[0].value
     };
     if (!appData.users[user.id]) {
-        appData.users[user.id] = { email: user.email, name: user.displayName, sharingList: [] };
+        appData.users[user.id] = { email: user.email, name: user.displayName, sharingList: [], theme: 'light' };
     } else {
         appData.users[user.id].email = user.email;
         appData.users[user.id].name = user.displayName;
@@ -79,7 +79,7 @@ if (DEV_LOGIN) {
             req.login(user, (err) => {
                 if (err) return res.status(500).send('Login failed');
                 if (!appData.users[user.id]) {
-                    appData.users[user.id] = { email: user.email, name: user.displayName, sharingList: [] };
+                    appData.users[user.id] = { email: user.email, name: user.displayName, sharingList: [], theme: 'light' };
                 }
                 saveData(appData);
                 res.redirect('/');
@@ -116,7 +116,7 @@ app.post('/auth/gsi/callback', async (req, res) => {
         };
 
         if (!appData.users[user.id]) {
-            appData.users[user.id] = { email: user.email, name: user.displayName, sharingList: [] };
+            appData.users[user.id] = { email: user.email, name: user.displayName, sharingList: [], theme: 'light' };
         } else {
             appData.users[user.id].email = user.email;
             appData.users[user.id].name = user.displayName;
@@ -193,6 +193,23 @@ app.post('/api/user/sharing', (req, res) => {
         saveData(appData);
     }
     res.json(user.sharingList);
+});
+
+app.post('/api/user/theme', (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+    const { theme } = req.body;
+    if (!theme || (theme !== 'light' && theme !== 'dark')) {
+        return res.status(400).json({ error: 'Invalid theme' });
+    }
+
+    const user = appData.users[req.user.id];
+    if (user) {
+        user.theme = theme;
+        saveData(appData);
+        res.json({ success: true, theme: user.theme });
+    } else {
+        res.status(404).json({ error: 'User not found' });
+    }
 });
 
 app.get('/api/cameras', (req, res) => {
