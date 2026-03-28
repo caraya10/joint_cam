@@ -653,17 +653,44 @@ document.getElementById('btn-toggle-camera-view').addEventListener('click', () =
 });
 
 document.getElementById('btn-fullscreen').addEventListener('click', () => {
-    const monitorView = document.getElementById('view-monitoring-active');
-    if (!document.fullscreenElement) {
-        if (monitorView.requestFullscreen) monitorView.requestFullscreen();
+    const video = document.getElementById('remote-video');
+    const container = document.getElementById('view-monitoring-active');
+    
+    // Check fullscreen state on document
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    
+    if (!isFullscreen) {
+        if (video.requestFullscreen) {
+            video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+            video.webkitRequestFullscreen();
+        } else if (video.webkitEnterFullscreen) {
+            video.webkitEnterFullscreen(); // iOS Safari specific
+        } else if (container.requestFullscreen) {
+            container.requestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+            document.webkitExitFullscreen();
+        }
+    }
+});
+
+function updateFullscreenIcons() {
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement;
+    if (isFullscreen) {
         document.getElementById('btn-fullscreen').querySelector('.svg-enter').style.display = 'none';
         document.getElementById('btn-fullscreen').querySelector('.svg-exit').style.display = 'block';
     } else {
-        if (document.exitFullscreen) document.exitFullscreen();
         document.getElementById('btn-fullscreen').querySelector('.svg-enter').style.display = 'block';
         document.getElementById('btn-fullscreen').querySelector('.svg-exit').style.display = 'none';
     }
-});
+}
+
+document.addEventListener('fullscreenchange', updateFullscreenIcons);
+document.addEventListener('webkitfullscreenchange', updateFullscreenIcons);
 
 document.getElementById('btn-copy-url-streaming').addEventListener('click', () => {
     const url = document.getElementById('share-url-streaming').textContent;

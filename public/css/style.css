@@ -595,12 +595,14 @@ p {
 
 /* Fullscreen Monitor */
 .monitor-full {
-    background: var(--bg-base);
+    background: #000;
     height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     padding: 0 !important;
     overflow: hidden;
+    position: relative;
 }
 
 #remote-video {
@@ -623,8 +625,15 @@ p {
 }
 
 .monitor-full .overlay-controls {
-    position: static;
+    position: absolute;
+    bottom: 0;
+    left: 0;
     width: 100%;
+    background: rgba(20, 20, 25, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
 }
 
 .live-badge {
