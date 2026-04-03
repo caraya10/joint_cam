@@ -65,7 +65,10 @@ passport.deserializeUser((id, done) => {
 app.use(session({
     secret: process.env.SESSION_SECRET || 'streamsync-default-secret',
     resave: false,
-    saveUninitialized: false
+    saveUninitialized: false,
+    cookie: {
+        maxAge: 1000 * 60 * 60 * 24 * 30 * 3 // 3 months
+    }
 }));
 app.use(passport.initialize());
 app.use(passport.session());
