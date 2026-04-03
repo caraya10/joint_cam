@@ -1,4 +1,6 @@
 require('dotenv').config();
+const fs = require('fs');
+const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -23,12 +25,30 @@ const testUsers = {
 };
 
 let appData = { users: {}, cameras: {} };
+let assetHashes = {};
+
+function getAssetHash(filePath) {
+    try {
+        const fileBuffer = fs.readFileSync(path.join(__dirname, 'public', filePath));
+        const hashSum = crypto.createHash('md5');
+        hashSum.update(fileBuffer);
+        return hashSum.digest('hex').substring(0, 8);
+    } catch (err) {
+        console.error(`Error hashing asset ${filePath}:`, err);
+        return '00000000';
+    }
+}
 
 // Load initial data
 loadData().then(data => {
     appData = data;
     // Clear stale cameras on startup since they should be ephemeral
     appData.cameras = {};
+
+    // Calculate asset hashes
+    assetHashes['js/app.js'] = getAssetHash('js/app.js');
+    assetHashes['css/style.css'] = getAssetHash('css/style.css');
+    console.log('Asset hashes calculated:', assetHashes);
 });
 
 // Auth Strategy
@@ -266,6 +286,38 @@ app.get('/config.json', (req, res) => {
         GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
         GA_MEASUREMENT_ID: process.env.GA_MEASUREMENT_ID
     });
+});
+
+// Asset versioning middleware: Rewrite /js/app.[hash].js -> /js/app.js
+app.use((req, res, next) => {
+    const assetMatch = req.url.match(/^\/(js\/app|css\/style)\.[a-f0-9]{8}\.(js|css)$/);
+    if (assetMatch) {
+        const originalUrl = `/${assetMatch[1]}.${assetMatch[2]}`;
+        console.log(`Rewriting versioned asset request: ${req.url} -> ${originalUrl}`);
+        req.url = originalUrl;
+    }
+    next();
+});
+
+// Serve index.html with versioned asset links and no-cache
+app.get(['/', '/index.html'], (req, res) => {
+    try {
+        let html = fs.readFileSync(path.join(__dirname, 'public', 'index.html'), 'utf8');
+
+        // Inject versioned hashes
+        if (assetHashes['js/app.js']) {
+            html = html.replace('js/app.js', `js/app.${assetHashes['js/app.js']}.js`);
+        }
+        if (assetHashes['css/style.css']) {
+            html = html.replace('css/style.css', `css/style.${assetHashes['css/style.css']}.css`);
+        }
+
+        res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+        res.send(html);
+    } catch (err) {
+        console.error('Error serving dynamic index.html:', err);
+        res.status(500).send('Internal Server Error');
+    }
 });
 
 app.use(express.static(path.join(__dirname, 'public')));
